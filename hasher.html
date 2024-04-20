@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/x64-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/md5.min.js"></script>
+    <title>Hashage by Marie Ucles</title>
+    <style>
+        .parity {
+            color: red;
+        }
+        .salt {
+            color: orange;
+            font-weight: bold;
+        }
+   
+    </style>
+</head>
+<body>
+    <h1>Hashage by Marie Ucles</h1>
+    <div>
+        <label for="message">Le message à hacher:</label>
+        <input type="text" id="message" placeholder="Enter message">
+    </div>
+    <br>
+    <div>
+        <input type="checkbox" id="md5Checkbox" name="hashType" value="md5">
+        <label for="md5Checkbox">MD5</label>
+        <input type="checkbox" id="sha1Checkbox" name="hashType" value="sha1">
+        <label for="sha1Checkbox">SHA-1</label>
+        <input type="checkbox" id="sha256Checkbox" name="hashType" value="sha256">
+        <label for="sha256Checkbox">SHA-256</label>
+        <input type="checkbox" id="sha512Checkbox" name="hashType" value="sha512">
+        <label for="sha512Checkbox">SHA-512</label>
+    </div>
+    <div>
+        <input type="checkbox" id="addParityCheckbox" name="addParity" value="addParity">
+        <label for="ParityCheckbox">Bit de Parité</label>
+    </div>
+    <div class="dynamic-salt">
+        <input type="checkbox" id="addDynamicSaltCheckbox" name="addDynamicSalt" value="addDynamicSalt">
+        <label for="addDynamicSaltCheckbox">Salage Dynamique</label>
+    </div>
+    <div>
+        <input type="checkbox" id="generateFixedSaltCheckbox" name="generateFixedSalt" value="generateFixedSalt">
+        <label for="generateFixedSaltCheckbox">Grain de Sel Fixe</label>
+    </div>
+    <br>
+    <button onclick="hashMessage()">Hash</button>
+    <br><br>
+    <div id="hashResults"></div>
+
+    <script>
+        function md5(message) {
+            return CryptoJS.MD5(message).toString();
+        }
+
+        async function sha1(message) {
+            const buffer = await crypto.subtle.digest("sha-1", new TextEncoder().encode(message));
+            return Array.prototype.map.call(new Uint8Array(buffer), x => ('00' + x.toString(16)).slice(-2)).join('');
+        }
+
+        async function sha256(message) {
+            const buffer = await crypto.subtle.digest("sha-256", new TextEncoder().encode(message));
+            return Array.prototype.map.call(new Uint8Array(buffer), x => ('00' + x.toString(16)).slice(-2)).join('');
+        }
+
+        async function sha512(message) {
+            const buffer = await crypto.subtle.digest("sha-512", new TextEncoder().encode(message));
+            return Array.prototype.map.call(new Uint8Array(buffer), x => ('00' + x.toString(16)).slice(-2)).join('');
+        }
+        
+        function generateFixedSalt(hash) {
+    const firstTwoChars = hash.substring(0, 2);
+    const salt = firstTwoChars.toString();
+    const saltedHash = hash + ' ' + salt; 
+    return saltedHash;
+}
+
+
+
+
+       function calculateDynamicSaltAndPosition(hash) {
+            const firstThreeDigits = parseInt(hash.substring(0, 3), 16);
+            const salt = firstThreeDigits.toString();
+            const position = salt.split('').reduce((acc, val) => acc + parseInt(val), 0);
+            return { salt, position };
+        }
+
+        function getSelectedHashTypes() {
+            const checkboxes = document.getElementsByName('hashType');
+            const selectedTypes = [];
+            checkboxes.forEach(checkbox => {
+                if (checkbox.checked) {
+                    selectedTypes.push(checkbox.value);
+                }
+            });
+            return selectedTypes;
+        }
+
+        function hashMessage() {
+            const message = document.getElementById('message').value;
+            const addParity = document.getElementById('addParityCheckbox').checked;
+            const addDynamicSalt = document.getElementById('addDynamicSaltCheckbox').checked;
+            const generateFixedSaltChecked = document.getElementById('generateFixedSaltCheckbox').checked;
+            
+            if ((addParity && (addDynamicSalt || generateFixedSaltChecked)) || (addDynamicSalt && generateFixedSaltChecked)) {
+                alert("Les méthodes de salage ne peuvent pas s'appliquer simultanément !");
+                return;
+            }
+
+            let salt = '';
+          
+            if (addDynamicSalt && document.getElementById('md5Checkbox').checked) {
+              
+                salt = generateDynamicSalt(md5(message));
+            } else if (generateFixedSaltChecked) {
+              
+                salt = generateFixedSalt(message, 1); 
+            }
+
+            
+            displayHashResults(message, addParity, addDynamicSalt, salt, generateFixedSaltChecked);
+        }
+
+        async function displayHashResults(message, addParity, addDynamicSalt, fixedSalt, addFixedSalt) {
+            const hashResults = document.getElementById('hashResults');
+            hashResults.innerHTML = '';
+            const selectedTypes = getSelectedHashTypes();
+
+            for (const type of selectedTypes) {
+                let hash = '';
+                switch (type) {
+                    case 'md5':
+                        hash = md5(message + (addParity ? 'parity' : '') + (addDynamicSalt ? generateDynamicSalt(md5(message)) : '') + (addFixedSalt ? fixedSalt : ''));
+                        break;
+                    case 'sha1':
+                        hash = await sha1(message + (addParity ? 'parity' : '') + (addDynamicSalt ? generateDynamicSalt(await sha1(message)) : '') + (addFixedSalt ? fixedSalt : ''));
+                        break;
+                    case 'sha256':
+                        hash = await sha256(message + (addParity ? 'parity' : '') + (addDynamicSalt ? generateDynamicSalt(await sha256(message)) : '') + (addFixedSalt ? fixedSalt : ''));
+                        break;
+                    case 'sha512':
+                        hash = await sha512(message + (addParity ? 'parity' : '') + (addDynamicSalt ? generateDynamicSalt(await sha512(message)) : '') + (addFixedSalt ? fixedSalt : ''));
+                        break;
+                    default:
+                        break;
+                }
+                const resultElement = document.createElement('p');
+                let parityBit = '';
+                if (addParity) {
+                    const lastChar = hash.charAt(hash.length - 1);
+                    const lastDigit = parseInt(lastChar, 16);
+                    parityBit = (lastDigit % 2 === 0) ? '0' : '1';
+                }
+                let saltedHash = hash;
+                if (addDynamicSalt) {
+                    const { salt, position } = calculateDynamicSaltAndPosition(hash);
+                    if (addDynamicSalt) {
+                        saltedHash = `${hash.substring(0, position)}<span class="salt">${salt}</span>${hash.substring(position)}`;
+                    }
+                }
+                if (addFixedSalt) {
+                    saltedHash = `<span class="fixed-salt">${saltedHash}</span>`;
+                }
+                resultElement.innerHTML = `${type.toUpperCase()}: <span class="parity">${parityBit}</span>${saltedHash}`;
+                hashResults.appendChild(resultElement);
+            }
+        }
+
+        function generateDynamicSalt(hash) {
+            const firstThreeDigits = parseInt(hash.substring(0, 3), 16);
+            const salt = firstThreeDigits.toString();
+            const position = salt.split('').reduce((acc, val) => acc + parseInt(val), 0);
+            return salt.repeat(position);
+        }
+
+   
+        document.getElementById('addParityCheckbox').addEventListener('change', function() {
+    if (!this.checked) {
+       
+        const results = document.querySelectorAll('#hashResults p');
+        results.forEach(result => {
+            const paritySpan = result.querySelector('.parity');
+            if (paritySpan) {
+                paritySpan.remove(); 
+            }
+        });
+       
+        const saltSpans = document.querySelectorAll('.salt');
+        saltSpans.forEach(saltSpan => {
+            saltSpan.remove(); 
+        });
+        const fixedSaltSpans = document.querySelectorAll('.fixed-salt');
+        fixedSaltSpans.forEach(fixedSaltSpan => {
+            fixedSaltSpan.remove();
+        });
+        document.getElementById('generateFixedSaltCheckbox').checked = false;
+        document.getElementById('addDynamicSaltCheckbox').checked = false;
+    }
+});
+
+
+document.getElementById('addDynamicSaltCheckbox').addEventListener('change', function() {
+    if (!this.checked) {
+        
+        const results = document.querySelectorAll('#hashResults p');
+        results.forEach(result => {
+            const saltSpan = result.querySelector('.salt');
+            if (saltSpan) {
+                saltSpan.remove(); 
+            }
+        });
+        document.getElementById('generateFixedSaltCheckbox').checked = false;
+    }
+});
+
+document.getElementById('generateFixedSaltCheckbox').addEventListener('change', function() {
+    if (!this.checked) {
+        
+        const results = document.querySelectorAll('#hashResults p .fixed-salt');
+        results.forEach(fixedSaltSpan => {
+            fixedSaltSpan.remove(); 
+        });
+    }
+});
+
+
+
+    </script>
+</body>
+</html>
