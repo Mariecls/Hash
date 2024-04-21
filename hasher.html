@@ -11,11 +11,13 @@
         .parity {
             color: red;
         }
-        .salt {
+        .fixed-salt {
             color: orange;
             font-weight: bold;
         }
-   
+        .dynamic-salt {
+            color: blue;
+        }
     </style>
 </head>
 <body>
@@ -73,16 +75,13 @@
         }
         
         function generateFixedSalt(hash) {
-    const firstTwoChars = hash.substring(0, 2);
-    const salt = firstTwoChars.toString();
-    const saltedHash = hash + ' ' + salt; 
-    return saltedHash;
-}
+            const firstTwoChars = hash.substring(0, 2);
+            const salt = firstTwoChars.toString();
+            const saltedHash = hash + ' ' + salt; 
+            return saltedHash;
+        }
 
-
-
-
-       function calculateDynamicSaltAndPosition(hash) {
+        function calculateDynamicSaltAndPosition(hash) {
             const firstThreeDigits = parseInt(hash.substring(0, 3), 16);
             const salt = firstThreeDigits.toString();
             const position = salt.split('').reduce((acc, val) => acc + parseInt(val), 0);
@@ -114,61 +113,102 @@
             let salt = '';
           
             if (addDynamicSalt && document.getElementById('md5Checkbox').checked) {
-              
                 salt = generateDynamicSalt(md5(message));
             } else if (generateFixedSaltChecked) {
-              
                 salt = generateFixedSalt(message, 1); 
             }
 
-            
             displayHashResults(message, addParity, addDynamicSalt, salt, generateFixedSaltChecked);
         }
 
         async function displayHashResults(message, addParity, addDynamicSalt, fixedSalt, addFixedSalt) {
-            const hashResults = document.getElementById('hashResults');
-            hashResults.innerHTML = '';
-            const selectedTypes = getSelectedHashTypes();
+    const hashResults = document.getElementById('hashResults');
+    hashResults.innerHTML = '';
+    const selectedTypes = getSelectedHashTypes();
 
-            for (const type of selectedTypes) {
-                let hash = '';
-                switch (type) {
-                    case 'md5':
-                        hash = md5(message + (addParity ? 'parity' : '') + (addDynamicSalt ? generateDynamicSalt(md5(message)) : '') + (addFixedSalt ? fixedSalt : ''));
-                        break;
-                    case 'sha1':
-                        hash = await sha1(message + (addParity ? 'parity' : '') + (addDynamicSalt ? generateDynamicSalt(await sha1(message)) : '') + (addFixedSalt ? fixedSalt : ''));
-                        break;
-                    case 'sha256':
-                        hash = await sha256(message + (addParity ? 'parity' : '') + (addDynamicSalt ? generateDynamicSalt(await sha256(message)) : '') + (addFixedSalt ? fixedSalt : ''));
-                        break;
-                    case 'sha512':
-                        hash = await sha512(message + (addParity ? 'parity' : '') + (addDynamicSalt ? generateDynamicSalt(await sha512(message)) : '') + (addFixedSalt ? fixedSalt : ''));
-                        break;
-                    default:
-                        break;
-                }
-                const resultElement = document.createElement('p');
-                let parityBit = '';
+    for (const type of selectedTypes) {
+        let hash = '';
+        switch (type) {
+            case 'md5':
+                hash = md5(message);
                 if (addParity) {
                     const lastChar = hash.charAt(hash.length - 1);
                     const lastDigit = parseInt(lastChar, 16);
-                    parityBit = (lastDigit % 2 === 0) ? '0' : '1';
+                    const parityBit = (lastDigit % 2 === 0) ? '0' : '1';
+                    hash += parityBit;
                 }
-                let saltedHash = hash;
                 if (addDynamicSalt) {
-                    const { salt, position } = calculateDynamicSaltAndPosition(hash);
-                    if (addDynamicSalt) {
-                        saltedHash = `${hash.substring(0, position)}<span class="salt">${salt}</span>${hash.substring(position)}`;
-                    }
+                    const dynamicSalt = generateDynamicSalt(hash);
+                    hash += dynamicSalt;
                 }
                 if (addFixedSalt) {
-                    saltedHash = `<span class="fixed-salt">${saltedHash}</span>`;
+                    const fixedSalt = generateFixedSalt(hash, 1);
+                    hash += fixedSalt;
                 }
-                resultElement.innerHTML = `${type.toUpperCase()}: <span class="parity">${parityBit}</span>${saltedHash}`;
-                hashResults.appendChild(resultElement);
-            }
+                break;
+            case 'sha1':
+                hash = await sha1(message);
+                if (addParity) {
+                    const lastChar = hash.charAt(hash.length - 1);
+                    const lastDigit = parseInt(lastChar, 16);
+                    const parityBit = (lastDigit % 2 === 0) ? '0' : '1';
+                    hash += parityBit;
+                }
+                if (addDynamicSalt) {
+                    const dynamicSalt = generateDynamicSalt(hash);
+                    hash += dynamicSalt;
+                }
+                if (addFixedSalt) {
+                    const fixedSalt = generateFixedSalt(hash, 1);
+                    hash += fixedSalt;
+                }
+                break;
+            case 'sha256':
+                hash = await sha256(message);
+                if (addParity) {
+                    const lastChar = hash.charAt(hash.length - 1);
+                    const lastDigit = parseInt(lastChar, 16);
+                    const parityBit = (lastDigit % 2 === 0) ? '0' : '1';
+                    hash += parityBit;
+                }
+                if (addDynamicSalt) {
+                    const dynamicSalt = generateDynamicSalt(hash);
+                    hash += dynamicSalt;
+                }
+                if (addFixedSalt) {
+                    const fixedSalt = generateFixedSalt(hash, 1);
+                    hash += fixedSalt;
+                }
+                break;
+            case 'sha512':
+                hash = await sha512(message);
+                if (addParity) {
+                    const lastChar = hash.charAt(hash.length - 1);
+                    const lastDigit = parseInt(lastChar, 16);
+                    const parityBit = (lastDigit % 2 === 0) ? '0' : '1';
+                    hash += parityBit;
+                }
+                if (addDynamicSalt) {
+                    const dynamicSalt = generateDynamicSalt(hash);
+                    hash += dynamicSalt;
+                }
+                if (addFixedSalt) {
+                    const fixedSalt = generateFixedSalt(hash, 1);
+                    hash += fixedSalt;
+                }
+                break;
+            default:
+                break;
         }
+        
+        const resultElement = document.createElement('p');
+        resultElement.innerHTML = `${type.toUpperCase()}: ${hash}`;
+        hashResults.appendChild(resultElement);
+    }
+}
+
+
+
 
         function generateDynamicSalt(hash) {
             const firstThreeDigits = parseInt(hash.substring(0, 3), 16);
@@ -177,55 +217,51 @@
             return salt.repeat(position);
         }
 
-   
         document.getElementById('addParityCheckbox').addEventListener('change', function() {
-    if (!this.checked) {
-       
-        const results = document.querySelectorAll('#hashResults p');
+    const results = document.querySelectorAll('#hashResults p');
+    if (this.checked) {
         results.forEach(result => {
-            const paritySpan = result.querySelector('.parity');
-            if (paritySpan) {
-                paritySpan.remove(); 
+            const lastCharacters = result.textContent.substring(result.textContent.length - 1);
+            const beforeLastCharacters = result.textContent.substring(result.textContent.length - 2, result.textContent.length - 1);
+            if ((lastCharacters === '0' || lastCharacters === '1') && beforeLastCharacters !== ' ') {
+                result.classList.add('parity');
+            } else {
+                result.classList.remove('parity');
             }
         });
-       
-        const saltSpans = document.querySelectorAll('.salt');
-        saltSpans.forEach(saltSpan => {
-            saltSpan.remove(); 
-        });
-        const fixedSaltSpans = document.querySelectorAll('.fixed-salt');
-        fixedSaltSpans.forEach(fixedSaltSpan => {
-            fixedSaltSpan.remove();
-        });
-        document.getElementById('generateFixedSaltCheckbox').checked = false;
-        document.getElementById('addDynamicSaltCheckbox').checked = false;
     }
 });
 
-
 document.getElementById('addDynamicSaltCheckbox').addEventListener('change', function() {
-    if (!this.checked) {
-        
-        const results = document.querySelectorAll('#hashResults p');
+    const results = document.querySelectorAll('#hashResults p');
+    if (this.checked) {
         results.forEach(result => {
-            const saltSpan = result.querySelector('.salt');
-            if (saltSpan) {
-                saltSpan.remove(); 
+            const lastCharacters = result.textContent.substring(result.textContent.length - 1);
+            const beforeLastCharacters = result.textContent.substring(result.textContent.length - 2, result.textContent.length - 1);
+            if (!isNaN(lastCharacters) && beforeLastCharacters === ' ') {
+                result.classList.add('dynamic-salt');
+            } else {
+                result.classList.remove('dynamic-salt');
             }
         });
-        document.getElementById('generateFixedSaltCheckbox').checked = false;
     }
 });
 
 document.getElementById('generateFixedSaltCheckbox').addEventListener('change', function() {
-    if (!this.checked) {
-        
-        const results = document.querySelectorAll('#hashResults p .fixed-salt');
-        results.forEach(fixedSaltSpan => {
-            fixedSaltSpan.remove(); 
+    const results = document.querySelectorAll('#hashResults p');
+    if (this.checked) {
+        results.forEach(result => {
+            const lastCharacters = result.textContent.substring(result.textContent.length - 1);
+            const beforeLastCharacters = result.textContent.substring(result.textContent.length - 2, result.textContent.length - 1);
+            if (!isNaN(lastCharacters) && beforeLastCharacters !== ' ') {
+                result.classList.add('fixed-salt');
+            } else {
+                result.classList.remove('fixed-salt');
+            }
         });
     }
 });
+
 
 
 
